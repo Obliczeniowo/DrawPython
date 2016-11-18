@@ -95,9 +95,9 @@ class Rectangle(DrawingObject):
 		config = self.canvas.itemconfig(self.id)
 		return "type=\"Rectangle\";x1=\"{x1}\";y1=\"{y1}\";x2=\"{x2}\";y2=\"{y2}\";fill=\"{fill}\";outline=\"{outline}\";width=\"{width}\"".format(x1 = coords[0], y1 = coords[1], x2 = coords[2], y2 = coords[3], fill = config["fill"][4], outline = config["outline"][4], width = config["width"][4])
 	@staticmethod
-	def GetObject(dictionary, canvas):
+	def GetObject(dictionary, canvas, object_tree):
 		if dictionary["type"] == "Rectangle":
-			return Rectangle(float(dictionary["x1"]), float(dictionary["y1"]), float(dictionary["x2"]), float(dictionary["y2"]), canvas, fill = dictionary["fill"], outline = dictionary["outline"], width = float(dictionary["width"]))
+			return Rectangle(float(dictionary["x1"]), float(dictionary["y1"]), float(dictionary["x2"]), float(dictionary["y2"]), canvas, object_tree, fill = dictionary["fill"], outline = dictionary["outline"], width = float(dictionary["width"]))
 		return None
 ################################################################################
 # Ellipse class ################################################################
@@ -142,9 +142,9 @@ class Ellipse(DrawingObject):
 		print(config["fill"])
 		return "type=\"Ellipse\";x1=\"{x1}\";y1=\"{y1}\";x2=\"{x2}\";y2=\"{y2}\";fill=\"{fill}\";outline=\"{outline}\";width=\"{width}\"".format(x1 = coords[0], y1 = coords[1], x2 = coords[2], y2 = coords[3], fill = config["fill"][4], outline = config["outline"][4], width = config["width"][4])
 	@staticmethod
-	def GetObject(dictionary, canvas):
+	def GetObject(dictionary, canvas, object_tree):
 		if dictionary["type"] == "Ellipse":
-			return Ellipse(float(dictionary["x1"]), float(dictionary["y1"]), float(dictionary["x2"]), float(dictionary["y2"]), canvas, fill = dictionary["fill"], outline = dictionary["outline"], width = float(dictionary["width"]))
+			return Ellipse(float(dictionary["x1"]), float(dictionary["y1"]), float(dictionary["x2"]), float(dictionary["y2"]), canvas, object_tree, fill = dictionary["fill"], outline = dictionary["outline"], width = float(dictionary["width"]))
 		return None
 ################################################################################
 # Line class ###################################################################
@@ -176,9 +176,9 @@ class Line(DrawingObject):
 		config = self.canvas.itemconfig(self.id)
 		return "type=\"Line\";x1=\"{x1}\";y1=\"{y1}\";x2=\"{x2}\";y2=\"{y2}\";fill=\"{fill}\";width=\"{width}\"".format(x1 = coords[0], y1 = coords[1], x2 = coords[2], y2 = coords[3], fill = config["fill"][4], width = config["width"][4])
 	@staticmethod
-	def GetObject(dictionary, canvas):
+	def GetObject(dictionary, canvas, object_tree):
 		if dictionary["type"] == "Line":
-			return Line(float(dictionary["x1"]), float(dictionary["y1"]), float(dictionary["x2"]), float(dictionary["y2"]), canvas, outline = dictionary["fill"], width = float(dictionary["width"]))
+			return Line(float(dictionary["x1"]), float(dictionary["y1"]), float(dictionary["x2"]), float(dictionary["y2"]), canvas, object_tree, outline = dictionary["fill"], width = float(dictionary["width"]))
 		return None
 ################################################################################
 # Polygon class ################################################################
@@ -212,14 +212,14 @@ class Polygon(DrawingObject):
 		str_coords = str_coords.strip(",")
 		config = self.canvas.itemconfig(self.id)
 		return "type=\"Polygon\";coords=\"{coords}\";fill=\"{fill}\";outline=\"{outline}\";width=\"{width}\"".format(coords = str_coords, fill = config['fill'][4], outline = config['outline'][4], width = float(config['width'][4]))
-	def GetObject(dictionary, canvas):
+	def GetObject(dictionary, canvas, object_tree):
 		if dictionary["type"] == "Polygon":
 			coords = dictionary["coords"].strip(",").split(",")
 			if len(coords) == 0 or len(coords) % 2:
 				return None
 			for i in range(len(coords)):
 				coords[i] = float(coords[i])
-			return Polygon(coords, canvas, fill = dictionary["fill"], outline = dictionary["outline"], width = float(dictionary["width"]))
+			return Polygon(coords, canvas, object_tree, fill = dictionary["fill"], outline = dictionary["outline"], width = float(dictionary["width"]))
 		return None
 ################################################################################
 # Toolbar class ################################################################
@@ -429,7 +429,7 @@ class Application:
 				for line in lines:
 					dictObj = strToDict(line)
 					for constructor in self.drConstructors:
-						newobject = constructor(dictObj, self.canvas)
+						newobject = constructor(dictObj, self.canvas, self.object_tree)
 						if newobject != None:
 							self.draw_object += [newobject]
 							break
