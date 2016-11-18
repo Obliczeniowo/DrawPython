@@ -40,24 +40,32 @@ def strToDict(string):
 # DrawingObject class ##########################################################
 ################################################################################
 class DrawingObject:
-	def __init__(self, id, canvas):
+	def __init__(self, id, canvas, object_tree):
 		"""
 		Each drawing object class like a Ellipse or Rectangle etc. must have
 		this class as a parent. Constructor of this class get two parameters
 		id - id of canvas object
 		canvas - Canvas class object
+		object_tree - Treeobject widtget to show info about object
 		"""
 		self.id = id
 		self.canvas = canvas
+		self.object_tree = object_tree
+		self.object_tree.insert("Obiekty", "end", str(self.id), text = str(self.id))
 	def remove(self):
 		self.canvas.delete(self.id)
 	def __eq__(self, other):
 		return other == self.id
+	def __del__(self):
+		try:
+			self.object_tree.delete(str(self.id))
+		except:
+			pass
 ################################################################################
 # Rectangle class ##############################################################
 ################################################################################
 class Rectangle(DrawingObject):
-	def __init__(self, x1, y1, x2, y2, canvas, fill = "", outline = "", width = 1):
+	def __init__(self, x1, y1, x2, y2, canvas, object_tree, fill = "", outline = "", width = 1):
 		"""
 		Rectangle calss need to story information about object and set or get some
 		info about them. Constructor get few important arguments:
@@ -74,9 +82,10 @@ class Rectangle(DrawingObject):
 		outline - color of border line
 		width - size of border line (in px)
 		"""
-		DrawingObject.__init__(self, canvas.create_rectangle(x1, y1, x2, y2, fill = fill, outline = outline, width = width), canvas)
+		DrawingObject.__init__(self, canvas.create_rectangle(x1, y1, x2, y2, fill = fill, outline = outline, width = width), canvas, object_tree)
 		self.x = x1
 		self.y = y1
+		self.object_tree.item(str(self.id),text = "Prostokąt {id}".format(id = self.id))
 	def setEnd(self, x2, y2):
 		width = x2 - self.x
 		height = y2 - self.y
@@ -94,7 +103,7 @@ class Rectangle(DrawingObject):
 # Ellipse class ################################################################
 ################################################################################
 class Ellipse(DrawingObject):
-	def __init__(self, x1, y1, x2, y2, canvas, fill = "", outline = "", width = 1):
+	def __init__(self, x1, y1, x2, y2, canvas, object_tree, fill = "", outline = "", width = 1):
 		"""
 		Ellipse calss need to story information about object and set or get some
 		info about them. Constructor get few important arguments:
@@ -111,7 +120,8 @@ class Ellipse(DrawingObject):
 		outline - color of border line
 		width - size of border line (in px)
 		"""
-		DrawingObject.__init__(self, canvas.create_oval(x1, y1, x2, y2, fill = fill, outline = outline, width = width), canvas)
+		DrawingObject.__init__(self, canvas.create_oval(x1, y1, x2, y2, fill = fill, outline = outline, width = width), canvas, object_tree)
+		self.object_tree.item(str(self.id),text = "Elipsa {id}".format(id = self.id))
 	def center(self):
 		coords = self.canvas.coords(self.id)
 		return ((coords[2] - coords[0]) * .5 + coords[0], (coords[1] - coords[3]) * .5 + coords[3])
@@ -140,7 +150,7 @@ class Ellipse(DrawingObject):
 # Line class ###################################################################
 ################################################################################
 class Line(DrawingObject):
-	def __init__(self, x1, y1, x2, y2, canvas, outline = "", width = 1):
+	def __init__(self, x1, y1, x2, y2, canvas, object_tree, outline = "", width = 1):
 		"""
 		Line calss need to story information about object and set or get some
 		info about them. Constructor get few important arguments:
@@ -156,7 +166,8 @@ class Line(DrawingObject):
 		fill - color of line, example "#ff0000" <- red color
 		width - size of line (in px)
 		"""
-		DrawingObject.__init__(self, canvas.create_line(x1, y1, x2, y2, fill = outline, width = width), canvas)# dash=(20,5) )
+		DrawingObject.__init__(self, canvas.create_line(x1, y1, x2, y2, fill = outline, width = width), canvas, object_tree)# dash=(20,5) )
+		self.object_tree.item(str(self.id),text = "Linia {id}".format(id = self.id))
 	def setEnd(self, x2, y2):
 		coords = self.canvas.coords(self.id)
 		self.canvas.coords(self.id, coords[0], coords[1], x2, y2)
@@ -173,7 +184,7 @@ class Line(DrawingObject):
 # Polygon class ################################################################
 ################################################################################
 class Polygon(DrawingObject):
-	def __init__(self, coords, canvas, outline = "", fill = "", width = 1):
+	def __init__(self, coords, canvas, object_tree, outline = "", fill = "", width = 1):
 		"""
 		Polygon calss need to story information about object and set or get some
 		info about them. Constructor get few important arguments:
@@ -187,7 +198,8 @@ class Polygon(DrawingObject):
 		outline - color of border line
 		width - size of border line (in px)
 		"""
-		DrawingObject.__init__(self, canvas.create_polygon(coords, fill = fill, outline = outline, width = width), canvas)
+		DrawingObject.__init__(self, canvas.create_polygon(coords, fill = fill, outline = outline, width = width), canvas, object_tree)
+		self.object_tree.item(str(self.id),text = "Wielokąt {id}".format(id = self.id))
 	def setEnd(self, x2, y2):
 		coords = self.canvas.coords(self.id)
 		coords += x2, y2
@@ -254,6 +266,10 @@ class Application:
 		self.window = tk.Tk()
 		self.window.title("Drawing on Canvas by Krzysztof Zajączkowski (obliczeniowo.com.pl)")
 		
+		########################################################################
+		# MENU #################################################################
+		########################################################################
+		
 		self.menu = tk.Menu(self.window)
 		
 		menu_file = tk.Menu(self.menu, tearoff = 0)
@@ -269,6 +285,12 @@ class Application:
 		self.menu.add_cascade(label = "O programie", menu = menu_about)
 		
 		self.window.config(menu = self.menu)
+		
+		########################################################################
+		# END MENU #############################################################
+		########################################################################
+		# TOOLBAR ##############################################################
+		########################################################################
 		
 		self.toolbar = Toolbar(self.window)
 		self.toolbar.add_button("L", image = "buttons/line.gif")
@@ -286,13 +308,22 @@ class Application:
 		self.strokecolorbutton = tk.Button(self.window, background = self.strokecolor, command = self.on_color_stroke)
 		self.strokecolorbutton.place(in_ = self.window, x = self.toolbar.height * 3, y = 0, width = self.toolbar.height, height = self.toolbar.height)
 		
-		self.canvas = tk.Canvas(self.window, background = "#ffffff", cursor = "tcross")
-		self.canvas.place(x = 0, y = self.toolbar.height, relwidth = 1., relheight = 1., height = - self.toolbar.height * 2)
-		
 		self.strokewidth = tk.IntVar()
 		self.strokewidth.set(1)
 		self.strokewidthspin = tk.Spinbox(self.window, from_ = 0, to = 10, textvariable = self.strokewidth, command = self.on_width_changed)
 		self.strokewidthspin.place(in_ = self.window, x = 0, y = 0, width = self.toolbar.height * 2, height = self.toolbar.height)
+		
+		########################################################################
+		# END TOOLBAR ##########################################################
+		########################################################################
+		
+		self.canvas = tk.Canvas(self.window, background = "#ffffff", cursor = "tcross")
+		self.canvas.place(x = 250, y = self.toolbar.height, relwidth = 1., relheight = 1., height = - self.toolbar.height * 2, width = -250)
+		
+		self.object_tree = ttk.Treeview(self.window)
+		self.object_tree.place(x = 0, y = self.toolbar.height, width = 250, relheight = 1., height = - self.toolbar.height * 2)
+		
+		self.object_tree.insert("", "end", "Obiekty", text = "Obiekty")
 		
 		self.mouse_position_on_canvas = tk.StringVar()
 		self.lb_mouse_position_on_canvas = tk.Label(self.window, textvariable = self.mouse_position_on_canvas)
@@ -326,17 +357,18 @@ class Application:
 	def on_lbc(self, event):
 		self.canvas.focus_set()
 		if self.toolbar.getvalueset == "P":
-			self.draw_object.extend([Rectangle(event.x, event.y, event.x, event.y, self.canvas, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
+			self.draw_object.extend([Rectangle(event.x, event.y, event.x, event.y, self.canvas, self.object_tree, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
 		elif self.toolbar.getvalueset == "O":
-			self.draw_object.extend([Ellipse(event.x, event.y, event.x, event.y, self.canvas, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
+			self.draw_object.extend([Ellipse(event.x, event.y, event.x, event.y, self.canvas, self.object_tree, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
 		elif self.toolbar.getvalueset == "L":
-			self.draw_object.extend([Line(event.x, event.y, event.x, event.y, self.canvas, outline = self.strokecolor, width = self.strokewidth.get())])
+			self.draw_object.extend([Line(event.x, event.y, event.x, event.y, self.canvas, self.object_tree, outline = self.strokecolor, width = self.strokewidth.get())])
 		elif self.toolbar.getvalueset == "Pol":
-			self.draw_object.extend([Polygon([event.x, event.y], self.canvas, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
+			self.draw_object.extend([Polygon([event.x, event.y], self.canvas, self.object_tree, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
 		elif self.toolbar.getvalueset == "M":
 			self.selected = self.canvas.find_closest(event.x, event.y)
 			if self.selected:
-				config = self.canvas.itemconfig(self.selected);
+				config = self.canvas.itemconfig(self.selected)
+				self.object_tree.selection("set", str(self.selected[0]))
 				self.strokewidth.set(float(config["width"][4]))
 				self.fillcolor = config["fill"][4]
 				self.fillcolorbutton.config(background = self.fillcolor)
