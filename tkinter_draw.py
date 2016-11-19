@@ -18,6 +18,8 @@ import tkinter.colorchooser as cch
 import tkinter.filedialog as fd
 import tkinter.messagebox as msb
 
+import tkinter_property_window as pw
+
 ################################################################################
 # function strToDict ###########################################################
 ################################################################################
@@ -265,7 +267,8 @@ class Application:
 	def __init__(self):
 		self.window = tk.Tk()
 		self.window.title("Drawing on Canvas by Krzysztof Zajączkowski (obliczeniowo.com.pl)")
-		
+		self.window.geometry("500x300")
+	
 		########################################################################
 		# MENU #################################################################
 		########################################################################
@@ -288,6 +291,8 @@ class Application:
 		
 		########################################################################
 		# END MENU #############################################################
+		########################################################################
+		
 		########################################################################
 		# TOOLBAR ##############################################################
 		########################################################################
@@ -322,6 +327,7 @@ class Application:
 		
 		self.object_tree = ttk.Treeview(self.window)
 		self.object_tree.place(x = 0, y = self.toolbar.height, width = 250, relheight = 1., height = - self.toolbar.height * 2)
+		self.object_tree.bind("<Double-Button-1>", self.on_double_click_object_tree)
 		
 		self.object_tree.insert("", "end", "Obiekty", text = "Obiekty")
 		
@@ -369,13 +375,18 @@ class Application:
 			if self.selected:
 				config = self.canvas.itemconfig(self.selected)
 				self.object_tree.selection("set", str(self.selected[0]))
-				self.strokewidth.set(float(config["width"][4]))
+				self.strokewidth.set(int(float(config["width"][4])))
 				self.fillcolor = config["fill"][4]
 				self.fillcolorbutton.config(background = self.fillcolor)
 				if "outline" in config:
 					self.strokecolor = config["outline"][4]
 					self.strokecolorbutton.config(background = self.strokecolor)
 		self.mousepointclicked = [event.x, event.y]
+	def on_double_click_object_tree(self, event):
+		selected = self.object_tree.selection()
+		if len(selected) == 1:
+			if selected[0].isnumeric():# msb.showinfo("Info", "{selected}".format(selected = self.canvas.coords(int(selected[0]))))
+				pw.propertyWnd(self.canvas, int(selected[0]), self.window)
 	def on_lbr(self, event):
 		pass
 	def on_color_fill(self):
