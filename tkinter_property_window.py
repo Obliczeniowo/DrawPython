@@ -39,37 +39,34 @@ class propertyWnd:
 		self.obj_id = obj_id
 		self.window = tk.Toplevel(parent)
 		self.window.grab_set()
-		#self.property_name_wnd = []
-		#self.property_val_wnd = []
-		
-		#self.property_name_var = []
-		#self.property_val__var = []
+
 		self.record = []
-		
+
 		i = 0
 		height = 20
 		width = 100
-		
-		#self.tv = tk.StringVar()
-		#self.tv.set("coś tam mam")
-		#self.en = tk.Entry(self.window, text = self.tv, width = 20)
-		#self.en.pack()
 
 		for iproperty in self.property_dict.items():
-			#self.property_name_var += [tk.StringVar()]
-			#self.property_name_var[-1].set(iproperty[0])
-			#self.property_name_wnd += [tk.Entry(self.window, textvariable = self.property_name_var[-1])]
-			#self.property_name_wnd[-1].place(x = 0, y = i * height, width = width, height = height)
 			self.record += [propertyRecord(self.window, i * height, width, height, iproperty[0], iproperty[1][4])]
 			i += 1
-		self.window.geometry("{width}x{height}".format(height =  height * (i + 2), width = width * 2))
+
+		self.window.geometry("{width}x{height}".format(height =  height * (i + 4), width = width * 2))
+		
+		self.tx_coords = tk.Text(self.window)
+		self.tx_coords.place(x = 0, y = height * i, in_ = self.window, relwidth = 1., relheight = 1., height = - height * (i + 2))
+		self.tx_coords.insert("end", self.canvas.coords(self.obj_id))
+		
 		self.bt_ok = tk.Button(self.window, text = "ok", command = self.on_ok_click)
-		self.bt_ok.place(x = 0, in_ = self.window, relwidth = 1., y = height * i, height = height * 2)
+		self.bt_ok.place(x = 0, in_ = self.window, relwidth = 1., y = - height * 2, rely = 1., height = height * 2)
 		# self.window.mainloop()
 	def on_ok_click(self):
 		try:
 			for item in self.record:
 				self.canvas.itemconfig(self.obj_id, {item.property_name_var.get(): item.property_value_var.get()})
+			coords = self.tx_coords.get(1.0, "end").strip().strip("[").strip("]").split(",")
+			for i in range(len(coords)):
+				coords[1] = coords[1].strip()
+			self.canvas.coords(self.obj_id, tuple(coords))
 		except:
 			msb.showerror("Info", "Coś nie tak!")
 		self.window.destroy()
