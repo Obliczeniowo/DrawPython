@@ -18,6 +18,8 @@ import tkinter.colorchooser as cch
 import tkinter.filedialog as fd
 import tkinter.messagebox as msb
 
+from collections import OrderedDict
+
 class propertyRecord:
 	def __init__(self, parent, y, width, height, name, value):
 		print("name = {name}, value = {value}".format(name = name, value = value))
@@ -35,6 +37,7 @@ class propertyRecord:
 class propertyWnd:
 	def __init__(self, canvas, obj_id, parent = None):
 		self.property_dict = canvas.itemconfig(obj_id)
+		self.property_dict = OrderedDict(sorted(self.property_dict.items(), key = lambda t: t[0])) 
 		self.canvas = canvas
 		self.obj_id = obj_id
 		self.window = tk.Toplevel(parent)

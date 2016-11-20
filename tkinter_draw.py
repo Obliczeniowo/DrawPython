@@ -42,7 +42,7 @@ def strToDict(string):
 # DrawingObject class ##########################################################
 ################################################################################
 class DrawingObject:
-	def __init__(self, id, canvas, object_tree):
+	def __init__(self, id, canvas, object_tree, typename):
 		"""
 		Each drawing object class like a Ellipse or Rectangle etc. must have
 		this class as a parent. Constructor of this class get two parameters
@@ -54,6 +54,7 @@ class DrawingObject:
 		self.canvas = canvas
 		self.object_tree = object_tree
 		self.object_tree.insert("Obiekty", "end", str(self.id), text = str(self.id))
+		self._typename = typename
 	def remove(self):
 		self.canvas.delete(self.id)
 	def __eq__(self, other):
@@ -63,20 +64,38 @@ class DrawingObject:
 			self.object_tree.delete(str(self.id))
 		except:
 			pass
+	def __str__(self):
+		coords = self.canvas.coords(self.id)
+		str_coords = ""
+		for i in coords:
+			str_coords += "{i},".format(i = i)
+		str_coords = str_coords.strip(",")
+		config = self.canvas.itemconfig(self.id)
+		str_config = ""
+		for item in config.items():
+			str_config += "{name}=\"{value}\";".format(name = item[0], value = item[1][4])
+		str_config = str_config.strip(";")
+		return "type=\"{typename}\";coords=\"{coords}\";{config}".format(typename = self._typename, coords = str_coords, config = str_config)
+	@staticmethod
+	def GetCoords(dictionary):
+		coords = dictionary["coords"].strip(",").split(",")
+		print(coords)
+		if len(coords) == 0 or len(coords) % 2:
+			return None
+		for i in range(len(coords)):
+			coords[i] = float(coords[i])
+		return coords
 ################################################################################
 # Rectangle class ##############################################################
 ################################################################################
 class Rectangle(DrawingObject):
-	def __init__(self, x1, y1, x2, y2, canvas, object_tree, fill = "", outline = "", width = 1):
+	def __init__(self, coords, canvas, object_tree, **kwargs):
 		"""
 		Rectangle calss need to story information about object and set or get some
 		info about them. Constructor get few important arguments:
-		Rectnagle(x1, y1, x2, y2, canvas, fill, outline, width)
+		Rectnagle(coords, canvas, fill, outline, width)
 		coordinate arguments:
-		x1 - x coordinate of left edge of rectangle
-		y1 - y coordinate of top edge of rectangle
-		x2 - x coordinate of right edge of rectangle
-		y2 - y coordinate of bottom edge of rectangle
+		coords - list or tuple of rectangle coordinate
 		Canvas:
 		canvas - object of class Canvas widget
 		other settings:
@@ -84,37 +103,33 @@ class Rectangle(DrawingObject):
 		outline - color of border line
 		width - size of border line (in px)
 		"""
-		DrawingObject.__init__(self, canvas.create_rectangle(x1, y1, x2, y2, fill = fill, outline = outline, width = width), canvas, object_tree)
-		self.x = x1
-		self.y = y1
+		DrawingObject.__init__(self, canvas.create_rectangle(coords, kwargs), canvas, object_tree, "Rectangle")
+		self.x = coords[0]
+		self.y = coords[1]
 		self.object_tree.item(str(self.id),text = "Prostokąt {id}".format(id = self.id))
 	def setEnd(self, x2, y2):
 		width = x2 - self.x
 		height = y2 - self.y
 		self.canvas.coords(self.id, min(x2, self.x), min(y2, self.y), max(x2, self.x), max(y2, self.y))
-	def __str__(self):
-		coords = self.canvas.coords(self.id)
-		config = self.canvas.itemconfig(self.id)
-		return "type=\"Rectangle\";x1=\"{x1}\";y1=\"{y1}\";x2=\"{x2}\";y2=\"{y2}\";fill=\"{fill}\";outline=\"{outline}\";width=\"{width}\"".format(x1 = coords[0], y1 = coords[1], x2 = coords[2], y2 = coords[3], fill = config["fill"][4], outline = config["outline"][4], width = config["width"][4])
 	@staticmethod
 	def GetObject(dictionary, canvas, object_tree):
 		if dictionary["type"] == "Rectangle":
-			return Rectangle(float(dictionary["x1"]), float(dictionary["y1"]), float(dictionary["x2"]), float(dictionary["y2"]), canvas, object_tree, fill = dictionary["fill"], outline = dictionary["outline"], width = float(dictionary["width"]))
+			coords = DrawingObject.GetCoords(dictionary)
+			del(dictionary["coords"])
+			del(dictionary["type"])
+			return Rectangle(coords, canvas, object_tree, **dictionary)
 		return None
 ################################################################################
 # Ellipse class ################################################################
 ################################################################################
 class Ellipse(DrawingObject):
-	def __init__(self, x1, y1, x2, y2, canvas, object_tree, fill = "", outline = "", width = 1):
+	def __init__(self, coords, canvas, object_tree, **kwargs):
 		"""
 		Ellipse calss need to story information about object and set or get some
 		info about them. Constructor get few important arguments:
-		Ellipse(x1, y1, x2, y2, canvas, fill, outline, width)
+		Ellipse(coords, canvas, fill, outline, width)
 		coordinate arguments:
-		x1 - x coordinate of left edge of rectangle in witch ellipse is
-		y1 - y coordinate of top edge of rectangle in witch ellipse is
-		x2 - x coordinate of right edge of rectangle in witch ellipse is
-		y2 - y coordinate of bottom edge of rectangle in witch ellipse is
+		coords - tuple or list of coordinate
 		Canvas:
 		canvas - object of Canvas class
 		other settings:
@@ -122,7 +137,7 @@ class Ellipse(DrawingObject):
 		outline - color of border line
 		width - size of border line (in px)
 		"""
-		DrawingObject.__init__(self, canvas.create_oval(x1, y1, x2, y2, fill = fill, outline = outline, width = width), canvas, object_tree)
+		DrawingObject.__init__(self, canvas.create_oval(coords, kwargs), canvas, object_tree, "Ellipse")
 		self.object_tree.item(str(self.id),text = "Elipsa {id}".format(id = self.id))
 	def center(self):
 		coords = self.canvas.coords(self.id)
@@ -138,55 +153,49 @@ class Ellipse(DrawingObject):
 		center = self.center()
 		rays = self.rays(center, x2, y2)
 		self.canvas.coords(self.id, center[0] - rays[0], center[1] - rays[1], center[0] + rays[0], center[1] + rays[1])
-	def __str__(self):
-		coords = self.canvas.coords(self.id)
-		config = self.canvas.itemconfig(self.id)
-		print(config["fill"])
-		return "type=\"Ellipse\";x1=\"{x1}\";y1=\"{y1}\";x2=\"{x2}\";y2=\"{y2}\";fill=\"{fill}\";outline=\"{outline}\";width=\"{width}\"".format(x1 = coords[0], y1 = coords[1], x2 = coords[2], y2 = coords[3], fill = config["fill"][4], outline = config["outline"][4], width = config["width"][4])
 	@staticmethod
 	def GetObject(dictionary, canvas, object_tree):
 		if dictionary["type"] == "Ellipse":
-			return Ellipse(float(dictionary["x1"]), float(dictionary["y1"]), float(dictionary["x2"]), float(dictionary["y2"]), canvas, object_tree, fill = dictionary["fill"], outline = dictionary["outline"], width = float(dictionary["width"]))
+			coords = DrawingObject.GetCoords(dictionary)
+			del(dictionary["coords"])
+			del(dictionary["type"])
+			return Ellipse(coords, canvas, object_tree, **dictionary)
 		return None
 ################################################################################
 # Line class ###################################################################
 ################################################################################
 class Line(DrawingObject):
-	def __init__(self, x1, y1, x2, y2, canvas, object_tree, outline = "", width = 1):
+	def __init__(self, coords, canvas, object_tree, **kwargs):
 		"""
 		Line calss need to story information about object and set or get some
 		info about them. Constructor get few important arguments:
-		Line(x1, y1, x2, y2, canvas, outline, width)
+		Line(coords, canvas, outline, width)
 		coordinate arguments:
-		x1 - x coordinate of first point
-		y1 - y coordinate of first point
-		x2 - x coordinate of last point
-		y2 - y coordinate of last point
+		coords - coordineto of line points (tuple or list)
 		Canvas:
 		canvas - class object of Canvas widget
 		other settings:
 		fill - color of line, example "#ff0000" <- red color
 		width - size of line (in px)
 		"""
-		DrawingObject.__init__(self, canvas.create_line(x1, y1, x2, y2, fill = outline, width = width), canvas, object_tree)# dash=(20,5) )
+		DrawingObject.__init__(self, canvas.create_line(coords, kwargs), canvas, object_tree, "Line")# dash=(20,5) )
 		self.object_tree.item(str(self.id),text = "Linia {id}".format(id = self.id))
 	def setEnd(self, x2, y2):
 		coords = self.canvas.coords(self.id)
 		self.canvas.coords(self.id, coords[0], coords[1], x2, y2)
-	def __str__(self):
-		coords = self.canvas.coords(self.id)
-		config = self.canvas.itemconfig(self.id)
-		return "type=\"Line\";x1=\"{x1}\";y1=\"{y1}\";x2=\"{x2}\";y2=\"{y2}\";fill=\"{fill}\";width=\"{width}\"".format(x1 = coords[0], y1 = coords[1], x2 = coords[2], y2 = coords[3], fill = config["fill"][4], width = config["width"][4])
 	@staticmethod
 	def GetObject(dictionary, canvas, object_tree):
 		if dictionary["type"] == "Line":
-			return Line(float(dictionary["x1"]), float(dictionary["y1"]), float(dictionary["x2"]), float(dictionary["y2"]), canvas, object_tree, outline = dictionary["fill"], width = float(dictionary["width"]))
+			coords = DrawingObject.GetCoords(dictionary)
+			del(dictionary["coords"])
+			del(dictionary["type"])
+			return Line(coords, canvas, object_tree, **dictionary)
 		return None
 ################################################################################
 # Polygon class ################################################################
 ################################################################################
 class Polygon(DrawingObject):
-	def __init__(self, coords, canvas, object_tree, outline = "", fill = "", width = 1):
+	def __init__(self, coords, canvas, object_tree, **kwargs):
 		"""
 		Polygon calss need to story information about object and set or get some
 		info about them. Constructor get few important arguments:
@@ -200,28 +209,20 @@ class Polygon(DrawingObject):
 		outline - color of border line
 		width - size of border line (in px)
 		"""
-		DrawingObject.__init__(self, canvas.create_polygon(coords, fill = fill, outline = outline, width = width), canvas, object_tree)
+		print(coords)
+		DrawingObject.__init__(self, canvas.create_polygon(coords, kwargs), canvas, object_tree, "Polygon")
 		self.object_tree.item(str(self.id),text = "Wielokąt {id}".format(id = self.id))
 	def setEnd(self, x2, y2):
 		coords = self.canvas.coords(self.id)
 		coords += x2, y2
 		self.canvas.coords(self.id, tuple(coords))
-	def __str__(self):
-		coords = self.canvas.coords(self.id)
-		str_coords = ""
-		for i in coords:
-			str_coords += "{i},".format(i = i)
-		str_coords = str_coords.strip(",")
-		config = self.canvas.itemconfig(self.id)
-		return "type=\"Polygon\";coords=\"{coords}\";fill=\"{fill}\";outline=\"{outline}\";width=\"{width}\"".format(coords = str_coords, fill = config['fill'][4], outline = config['outline'][4], width = float(config['width'][4]))
 	def GetObject(dictionary, canvas, object_tree):
 		if dictionary["type"] == "Polygon":
-			coords = dictionary["coords"].strip(",").split(",")
-			if len(coords) == 0 or len(coords) % 2:
-				return None
-			for i in range(len(coords)):
-				coords[i] = float(coords[i])
-			return Polygon(coords, canvas, object_tree, fill = dictionary["fill"], outline = dictionary["outline"], width = float(dictionary["width"]))
+			coords = DrawingObject.GetCoords(dictionary)
+			del(dictionary["coords"])
+			del(dictionary["type"])
+			print(dictionary)
+			return Polygon(coords, canvas, object_tree, **dictionary)
 		return None
 ################################################################################
 # Toolbar class ################################################################
@@ -345,6 +346,7 @@ class Application:
 		self.canvas.bind("<Motion>", self.on_mousemove)
 		self.canvas.bind("<Button-1>", self.on_lbc)
 		self.canvas.bind("<ButtonRelease-1>", self.on_lbr)
+		self.canvas.bind("<Double-Button-1>", self.on_double_canvas_click)
 		
 		self.canvas.bind("<Button-3>", self.on_rbc)
 		self.canvas.bind("<Delete>", self.on_delete)
@@ -363,11 +365,11 @@ class Application:
 	def on_lbc(self, event):
 		self.canvas.focus_set()
 		if self.toolbar.getvalueset == "P":
-			self.draw_object.extend([Rectangle(event.x, event.y, event.x, event.y, self.canvas, self.object_tree, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
+			self.draw_object.extend([Rectangle([event.x, event.y, event.x, event.y], self.canvas, self.object_tree, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
 		elif self.toolbar.getvalueset == "O":
-			self.draw_object.extend([Ellipse(event.x, event.y, event.x, event.y, self.canvas, self.object_tree, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
+			self.draw_object.extend([Ellipse([event.x, event.y, event.x, event.y], self.canvas, self.object_tree, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
 		elif self.toolbar.getvalueset == "L":
-			self.draw_object.extend([Line(event.x, event.y, event.x, event.y, self.canvas, self.object_tree, outline = self.strokecolor, width = self.strokewidth.get())])
+			self.draw_object.extend([Line([event.x, event.y, event.x, event.y], self.canvas, self.object_tree, fill = self.strokecolor, width = self.strokewidth.get())])
 		elif self.toolbar.getvalueset == "Pol":
 			self.draw_object.extend([Polygon([event.x, event.y], self.canvas, self.object_tree, fill = self.fillcolor, outline = self.strokecolor, width = self.strokewidth.get())])
 		elif self.toolbar.getvalueset == "M":
@@ -376,29 +378,47 @@ class Application:
 				config = self.canvas.itemconfig(self.selected)
 				self.object_tree.selection("set", str(self.selected[0]))
 				self.strokewidth.set(int(float(config["width"][4])))
-				self.fillcolor = config["fill"][4]
-				self.fillcolorbutton.config(background = self.fillcolor)
+				
 				if "outline" in config:
 					self.strokecolor = config["outline"][4]
-					self.strokecolorbutton.config(background = self.strokecolor)
+					if config["outline"][4]:
+						self.strokecolorbutton.config(background = self.strokecolor)
+					else:
+						self.strokecolorbutton.config(background = "#aaaaaa", text = "x")
+					self.fillcolor = config["fill"][4]
+					if config["fill"][4]:
+						self.fillcolorbutton.config(background = self.fillcolor, text = "")
+					else:
+						self.fillcolorbutton.config(background = "#aaaaaa", text = "x")
+				else:
+					self.strokecolor = config["fill"][4]
+					if config["fill"][4]:
+						self.strokecolorbutton.config(background = config["fill"][4], text = "")
+					else:
+						self.strokecolorbutton.config(background = "#aaaaaa", text = "x")
 		self.mousepointclicked = [event.x, event.y]
 	def on_double_click_object_tree(self, event):
 		selected = self.object_tree.selection()
 		if len(selected) == 1:
 			if selected[0].isnumeric():# msb.showinfo("Info", "{selected}".format(selected = self.canvas.coords(int(selected[0]))))
 				pw.propertyWnd(self.canvas, int(selected[0]), self.window)
+	def on_double_canvas_click(self, event):
+		if self.toolbar.getvalueset == "M":
+			current = self.canvas.find_withtag(tk.CURRENT)
+			if current:
+				pw.propertyWnd(self.canvas, current[0], self.window)
 	def on_lbr(self, event):
 		pass
 	def on_color_fill(self):
 		fc = cch.askcolor()[1]
-		self.fillcolor = fc if fc != None else self.fillcolor
-		self.fillcolorbutton.config(background = self.fillcolor)
+		self.fillcolor = fc if fc else self.fillcolor
+		self.fillcolorbutton.config(background = self.fillcolor, text = "")
 		if self.toolbar.getvalueset == "M" and self.selected != None:
 			self.canvas.itemconfig(self.selected, fill = fc)
 	def on_color_stroke(self):
 		fc = cch.askcolor()[1]
-		self.strokecolor = fc if fc != None else self.strokecolor
-		self.strokecolorbutton.config(background = self.strokecolor)
+		self.strokecolor = fc if fc else self.strokecolor
+		self.strokecolorbutton.config(background = self.strokecolor, text = "")
 		if self.toolbar.getvalueset == "M" and self.selected != None:
 			self.canvas.itemconfig(self.selected, outline = fc)
 	def on_rbc(self, events):
