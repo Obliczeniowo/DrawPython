@@ -83,7 +83,16 @@ class DrawingObject:
 			return True
 		except:
 			return False
-	
+	def toSvg(self):
+		config = self.canvas.itemconfig(self.id)
+		style = "style = \""
+		if "outline" in config:
+			style += "fill:{fill};stroke:{stroke}".format(fill = config["fill"][4] if len(config["fill"][4]) else "none", stroke = config["outline"][4] if len(config["outline"][4]) else "none")
+		else:
+			style += "fill:none;stroke:{fill}".format(fill = config["fill"][4] if len(config["fill"][4]) else "none")
+		style += ";stroke-width:{width}".format(width = config["width"][4])
+		style += "\""
+		return style
 	@staticmethod
 	def GetCoords(dictionary):
 		coords = dictionary["coords"].strip(",").split(",")
@@ -97,6 +106,7 @@ class DrawingObject:
 # Rectangle class ##############################################################
 ################################################################################
 class Rectangle(DrawingObject):
+	command = ["Rectangle", "rectangle", "Prostokąt", "prostokąt"]
 	def __init__(self, coords, canvas, object_tree, **kwargs):
 		"""
 		Rectangle calss need to story information about object and set or get some
@@ -119,9 +129,15 @@ class Rectangle(DrawingObject):
 		width = x2 - self.x
 		height = y2 - self.y
 		self.canvas.coords(self.id, min(x2, self.x), min(y2, self.y), max(x2, self.x), max(y2, self.y))
+	def toSvg(self):
+		coords = self.canvas.coords(self.id)
+		points = points.strip()
+		return "<polygon x = \"{x}\" y = \"{y}\" width = \"{width}\" height = \"{height}\" {style}/>".format(x = coords[0], y = coords[1], width = coords[0] - coords[2], height = coords[1] - coords[3],  style = DrawingObject.toSvg(self))
 	@staticmethod
-	def GetObject(dictionary, canvas, object_tree):
-		if dictionary["type"] in ["Rectangle", "rectangle", "Prostokąt", "prostokąt"]:
+	def GetObject(dictionary, canvas, object_tree, setvar = None):
+		if dictionary["type"] in Rectangle.command:
+			if not (setvar is None):
+				setvar.set(Rectangle.command[0])
 			coords = DrawingObject.GetCoords(dictionary)
 			del(dictionary["coords"])
 			del(dictionary["type"])
@@ -131,6 +147,7 @@ class Rectangle(DrawingObject):
 # Ellipse class ################################################################
 ################################################################################
 class Ellipse(DrawingObject):
+	command = ["Ellipse", "ellipse", "Elipsa", "elipsa"]
 	def __init__(self, coords, canvas, object_tree, **kwargs):
 		"""
 		Ellipse calss need to story information about object and set or get some
@@ -161,9 +178,15 @@ class Ellipse(DrawingObject):
 		center = self.center()
 		rays = self.rays(center, x2, y2)
 		self.canvas.coords(self.id, center[0] - rays[0], center[1] - rays[1], center[0] + rays[0], center[1] + rays[1])
+	def toSvg(self):
+		coords = self.canvas.coords(self.id)
+		points = points.strip()
+		return "<polygon cx = \"{cx}\" cy = \"{cy}\" rx = \"{rx}\" ry = \"{ry}\" {style}/>".format(cx = (coords[0] + coords[2]) / 2, cy = (coords[1] + coords[3]) / 2, rx = abs((coords[0] - coords[2]) / 2), ry = abs((coords[1] - coords[3]) / 2),  style = DrawingObject.toSvg(self))
 	@staticmethod
-	def GetObject(dictionary, canvas, object_tree):
-		if dictionary["type"] in ["Ellipse", "ellipse", "Elipsa", "elipsa"]:
+	def GetObject(dictionary, canvas, object_tree, setvar = None):
+		if dictionary["type"] in Ellipse.command:
+			if not (setvar is None):
+				setvar.set(Ellipse.command[0])
 			coords = DrawingObject.GetCoords(dictionary)
 			del(dictionary["coords"])
 			del(dictionary["type"])
@@ -173,6 +196,7 @@ class Ellipse(DrawingObject):
 # Line class ###################################################################
 ################################################################################
 class Line(DrawingObject):
+	command = ["Line", "line", "Linia", "linia"]
 	def __init__(self, coords, canvas, object_tree, **kwargs):
 		"""
 		Line calss need to story information about object and set or get some
@@ -191,9 +215,18 @@ class Line(DrawingObject):
 	def setEnd(self, x2, y2):
 		coords = self.canvas.coords(self.id)
 		self.canvas.coords(self.id, coords[0], coords[1], x2, y2)
+	def toSvg(self):
+		points = ""
+		coords = self.canvas.coords(self.id)
+		for i in range(len(coords) // 2):
+			points += " {x},{y}".format(x = coords[i * 2], y = coords[i * 2 + 1])
+		points = points.strip()
+		return "<polyline points = \"{points}\" {style}/>".format(points = points, style = DrawingObject.toSvg(self))
 	@staticmethod
-	def GetObject(dictionary, canvas, object_tree):
-		if dictionary["type"] in ["Line", "line", "Linia", "linia"]:
+	def GetObject(dictionary, canvas, object_tree, setvar = None):
+		if dictionary["type"] in Line.command:
+			if not (setvar is None):
+				setvar.set(Line.command[0])
 			coords = DrawingObject.GetCoords(dictionary)
 			del(dictionary["coords"])
 			del(dictionary["type"])
@@ -206,9 +239,10 @@ class Line(DrawingObject):
 # Polygon class ################################################################
 ################################################################################
 class Polygon(DrawingObject):
+	command = ["Polygon", "polygon", "Wielokąt", "wielokąt"]
 	def __init__(self, coords, canvas, object_tree, **kwargs):
 		"""
-		Polygon calss need to story information about object and set or get some
+		Polygon class need to story information about object and set or get some
 		info about them. Constructor get few important arguments:
 		Polygon(coords, canvas, outline, fill, width)
 		coordinate arguments:
@@ -227,8 +261,18 @@ class Polygon(DrawingObject):
 		coords = self.canvas.coords(self.id)
 		coords += x2, y2
 		self.canvas.coords(self.id, tuple(coords))
-	def GetObject(dictionary, canvas, object_tree):
-		if dictionary["type"] in ["Polygon", "polygon", "Wielokąt", "wielokąt"]:
+	def toSvg(self):
+		points = ""
+		coords = self.canvas.coords(self.id)
+		for i in range(len(coords) // 2):
+			points += " {x},{y}".format(x = coords[i * 2], y = coords[i * 2 + 1])
+		points = points.strip()
+		return "<polygon points = \"{points}\" {style}/>".format(points = points, style = DrawingObject.toSvg(self))
+
+	def GetObject(dictionary, canvas, object_tree, setvar = None):
+		if dictionary["type"] in Polygon.command:
+			if not (setvar is None):
+				setvar.set(Polygon.command[0])
 			coords = DrawingObject.GetCoords(dictionary)
 			del(dictionary["coords"])
 			del(dictionary["type"])
@@ -292,6 +336,7 @@ class Application:
 		menu_file = tk.Menu(self.menu, tearoff = 0)
 		menu_file.add_command(label = "Zapisz", command = self.menu_save_to_file)
 		menu_file.add_command(label = "Otwórz", command = self.menu_open_file)
+		menu_file.add_command(label = "Exportuj do svg", command = self.menu_export_to_svg)
 		
 		self.menu.add_cascade(label = "Plik", menu = menu_file)
 		
@@ -392,19 +437,21 @@ class Application:
 			if self.toolbar.getvalueset == "Rectangle" or self.toolbar.getvalueset == "Ellipse" or self.toolbar.getvalueset == "Line" or self.toolbar.getvalueset == "Polygon":
 				self.draw_object[-1].setCoords(self.coords + [event.x, event.y])
 	def on_return_canvas_click(self, event):
-		self.addObject = False
-		if self.toolbar.getvalueset == "Rectangle" or self.toolbar.getvalueset == "Ellipse":
-			if len(self.coords) != 4:
-				del(self.draw_object[-1])
-			else:
-				self.draw_object[-1].setCoords(self.coords)
-			self.coords = []
-		elif self.toolbar.getvalueset == "Line" or self.toolbar.getvalueset == "Polygon":
-			if len(self.coords) < 4:
-				del(self.draw_object[-1])
-			else:
-				self.draw_object[-1].setCoords(self.coords)
-			self.coords = []
+		self.commandlinevar.set("")
+		self.on_return_commandline_click(event)
+		#self.addObject = False
+		#if self.toolbar.getvalueset == "Rectangle" or self.toolbar.getvalueset == "Ellipse":
+		#	if len(self.coords) != 4:
+		#		del(self.draw_object[-1])
+		#	else:
+		#		self.draw_object[-1].setCoords(self.coords)
+		#	self.coords = []
+		#elif self.toolbar.getvalueset == "Line" or self.toolbar.getvalueset == "Polygon":
+		#	if len(self.coords) < 4:
+		#		del(self.draw_object[-1])
+		#	else:
+		#		self.draw_object[-1].setCoords(self.coords)
+		#	self.coords = []
 	def on_return_commandline_click(self, event):
 		self.commandhistory.insert("end", "\n" + self.commandline.get() if self.commandhistory.get(1., "end") != "\n" else self.commandline.get())
 		self.commandhistory.see("end")
@@ -427,27 +474,29 @@ class Application:
 						for coord in coordst:
 							if globalpt:
 								self.coords += [float(coord)]
-								coords += "," + coord
+								coords += ",{0}".format(coord)
 								self.lastpoint[i % 2] = self.coords[-1]
 							else:
 								self.coords += [float(coord) + self.lastpoint[i % 2]]
 								coords += ",{0}".format(float(coord) + self.lastpoint[i % 2])
 								self.lastpoint[i % 2] = self.coords[-1]
 							i += 1
+						print(self.coords)
 					if len(self.coords) == 0:
 						coords = "{0},{1}".format(self.lastpoint[0], self.lastpoint[1])
 						coords += ",{0},{1}".format(self.lastpoint[0], self.lastpoint[1])
 					elif len(self.coords) == 2:
 						coords += ",{0},{1}".format(self.lastpoint[0], self.lastpoint[1])
-					print(coords)
+					coords = coords.strip(",")
 					dictionary = {"type": command, "coords": coords, "fill": self.fillcolor, "outline": self.strokecolor, "width": self.strokewidth.get()}
 					for constructor in self.drConstructors:
-						obj = constructor(dictionary, self.canvas, self.object_tree)
-						if obj != None:
+						obj = constructor(dictionary, self.canvas, self.object_tree, self.toolbar.valueset)
+						if not (obj is None):
 							self.draw_object += [obj]
 							self.commandlinevar.set("")
 							self.addObject = True
 							break;
+					print("c2={0}".format(self.coords))
 					if self.addObject == False:
 						self.coords = []
 						self.commandhistory.insert("end","\nPas zastawię czapke przedam, polecenie tego nie znam")
@@ -469,6 +518,7 @@ class Application:
 				if coords[0].find("@") > -1:
 					globalpt = False
 					coords[0] = coords[0][1:]
+				print(coords)
 				i = 0
 				for coord in coords:
 					if globalpt:
@@ -477,6 +527,7 @@ class Application:
 						self.coords += [float(coord) + self.lastpoint[i % 2]]						
 					self.lastpoint[i % 2] = self.coords[-1]
 					i += 1
+				print(self.coords)
 				if len(self.coords) % 2 == 0:
 					if len(self.coords) == 2:
 						self.draw_object[-1].setCoords(self.coords + self.lastpoint)
@@ -491,10 +542,10 @@ class Application:
 				self.addObject = False
 		
 	def on_toolbar_mode_changed(self, *args):
-		if self.addObject:
-			del(self.draw_object[-1])
+		#if self.addObject:
+		#	del(self.draw_object[-1])
 		self.addObject = False
-		self.coords = []
+		#self.coords = []
 	def on_lbc(self, event):
 		self.canvas.focus_set()
 		
@@ -521,6 +572,9 @@ class Application:
 				print("{0} {1}".format(event.x, event.y))
 				self.commandlinevar.set("{0} {1}".format(event.x, event.y))
 				self.on_return_commandline_click(event)
+				if self.toolbar.getvalueset in ["Rectangle", "Ellipse"]:
+					self.commandlinevar.set("")
+					self.on_return_commandline_click(event)
 				#self.lastpoint = [event.x, event.y]
 		
 		if self.toolbar.getvalueset == "M":
@@ -588,6 +642,7 @@ class Application:
 				if i.id == self.selected[0]:
 					self.draw_object.remove(i)
 			self.canvas.delete(self.selected)
+			
 	# for menu methods		
 	def menu_save_to_file(self):
 		if len(self.draw_object):
@@ -617,6 +672,17 @@ class Application:
 						if newobject != None:
 							self.draw_object += [newobject]
 							break
+	def menu_export_to_svg(self):
+		if len(self.draw_object):
+			filename = fd.asksaveasfilename(filetypes=[("Plik svg","*.svg")], defaultextension = "*.svg")
+			
+			if filename:
+				svgfile = open(filename, "w", -1, "utf-8")
+				svgfile.write("<svg width = \"2100\" height = \"2970\">\n")
+				for i in range(len(self.draw_object)):
+					svgfile.write("{0}\n".format(self.draw_object[i].toSvg()))
+				svgfile.write("</svg>")
+				svgfile.close()
 	def menu_author(self):
 		msb.showinfo("O autorze", "Ten szalenie prosty program napisazy został przez Krzysztofa Zajączkowskiego\nW złudnej skądinąd nadziei, że kogoś rozbawi lub rozweseli")
 	def menu_licence(self):
