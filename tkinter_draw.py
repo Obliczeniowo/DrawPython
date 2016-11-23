@@ -91,7 +91,14 @@ class DrawingObject:
 		else:
 			style += "fill:none;stroke:{fill}".format(fill = config["fill"][4] if len(config["fill"][4]) else "none")
 		style += ";stroke-width:{width}".format(width = config["width"][4])
+		style += ";stroke-linejoin:{joinstyle}".format(joinstyle = config["joinstyle"][4])
+		capstyle = {"butt": "butt", "projecting": "square", "round": "round"}
+		if config["capstyle"][4] in capstyle:
+			style += ";stroke-linecap:{capstyle}".format(capstyle = config["capstyle"][4])
 		style += "\""
+		if len(config["dash"][4]):
+			dashArray = config["dash"][4].replace(" ", ",")
+			style += " stroke-dasharray = \"{dashArray}\"".format(dashArray = dashArray)
 		return style
 	@staticmethod
 	def GetCoords(dictionary):
